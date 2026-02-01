@@ -1,0 +1,7 @@
+// qr-gen.js
+const { makeWASocket } = require("@whiskeysockets/baileys");
+
+makeWASocket({
+  printQRInTerminal: true,
+  auth: undefined,
+}).ev.on("creds.update", () => {});
