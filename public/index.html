@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Waleed XD | WP LODAR</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>𝐖𝐀𝐋𝐄𝐄𝐃 𝐗𝐃</h1>
+    <p class="tag">WP LODAR SA LUSH TYPE KA 💣</p>
+
+    <!-- Upload Creds -->
+    <div class="section">
+      <h2>📤 UPLOAD CREDS.JSON</h2>
+      <input type="file" id="credsFile" accept=".json" />
+      <button onclick="uploadCreds()">UPLOAD & CONNECT</button>
+      <p id="credsStatus"></p>
+    </div>
+
+    <hr />
+
+    <!-- Send Message -->
+    <div class="section">
+      <h2>💬 SEND MESSAGE</h2>
+      <input type="text" placeholder="Targets (comma-separated numbers)" id="targets" /><br />
+      <textarea id="message" placeholder="Type your message..."></textarea><br />
+      <input type="number" id="delay" placeholder="Delay (seconds)" min="1" value="3" />
+      <button onclick="sendMessage()">SEND NOW</button>
+      <p id="sendStatus"></p>
+    </div>
+
+    <div class="status-box" id="connectionStatus">🔌 Status: Not Connected</div>
+  </div>
+
+  <script>
+    let isConnected = false;
+
+    // Check connection status on load
+    fetch("/status")
+      .then(res => res.json())
+      .then(data => {
+        if (data.connected) {
+          document.getElementById("connectionStatus").textContent = "🟢 Connected to WhatsApp";
+          isConnected = true;
+        }
+      });
+
+    function uploadCreds() {
+      const fileInput = document.getElementById("credsFile");
+      const status = document.getElementById("credsStatus");
+
+      if (!fileInput.files[0]) {
+        status.textContent = "❌ Please select creds.json";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("creds", fileInput.files[0]);
+
+      fetch("/upload-creds", {
+        method: "POST",
+        body: formData,
+      })
+        .then(res => res.text())
+        .then(msg => {
+          status.textContent = msg;
+          if (msg.includes("succes")) {
+            checkConnection(); // Try to confirm connection
+          }
+        })
+        .catch(err => {
+          status.textContent = "❌ Error: " + err.message;
+        });
+    }
+
+    function sendMessage() {
+      const targets = document.getElementById("targets").value;
+      const message = document.getElementById("message").value;
+      const delay = document.getElementById("delay").value;
+      const status = document.getElementById("sendStatus");
+
+      if (!targets || !message || !delay) {
+        status.textContent = "❌ Fill all fields!";
+        return;
+      }
+
+      fetch("/send-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targets, message, delay: parseInt(delay) }),
+      })
+        .then(res => res.text())
+        .then(text => {
+          status.textContent = text;
+        })
+        .catch(err => {
+          status.textContent = "❌ Failed: " + err.message;
+        });
+    }
+
+    function checkConnection() {
+      fetch("/status")
+        .then(res => res.json())
+        .then(data => {
+          const statusEl = document.getElementById("connectionStatus");
+          if (data.connected) {
+            statusEl.textContent = "🟢 Connected to WhatsApp";
+            isConnected = true;
+          } else {
+            statusEl.textContent = "🔴 Connecting...";
+            setTimeout(checkConnection, 3000);
+          }
+        });
+    }
+  </script>
+</body>
+</html>
